@@ -6,40 +6,39 @@ on:
 
 jobs:
   deploy:
+    name: Build and Deploy
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout source
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Decode GCP credentials
-      run: echo "${{ secrets.GCP_SA_KEY }}" | base64 -d > $HOME/gcp-key.json
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-    - name: Authenticate to GCP
-      uses: google-github-actions/auth@v2
-      with:
-        credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
 
-    - name: Set up gcloud
-      uses: google-github-actions/setup-gcloud@v2
-      with:
-        project_id: ${{ secrets.GCP_PROJECT_ID }}
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-    - name: Configure Docker
-      run: gcloud auth configure-docker
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${{ env.IMAGE }} .
+          docker push ${{ env.IMAGE }}
 
-    - name: Build image
-      run: |
-        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.SERVICE_NAME }}:$GITHUB_SHA .
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ env.IMAGE }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated
 
-    - name: Push image
-      run: |
-        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.SERVICE_NAME }}:$GITHUB_SHA
-
-    - name: Deploy to Cloud Run
-      run: |
-        gcloud run deploy ${{ secrets.SERVICE_NAME }} \
-          --image=gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.SERVICE_NAME }}:$GITHUB_SHA \
-          --platform=managed \
-          --region=${{ secrets.GCP_REGION }} \
-          --allow-unauthenticated
+    env:
+      PROJECT_ID: crop-recommend-system1
+      REGION: us-central1
+      SERVICE_NAME: crop-recommend-service
+      IMAGE: us-central1-docker.pkg.dev/crop-recommend-system1/cloud-run-source-deploy/crop-recommend-image
