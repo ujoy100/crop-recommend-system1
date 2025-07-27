@@ -67,9 +67,42 @@
             border: 1px solid #d0f0d0;
             border-radius: 4px;
         }
+
+        /* === Loader styles === */
+        #loader {
+            position: fixed;
+            z-index: 9999;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid teal;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0%   { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+    <!-- 🔄 Loader -->
+    <div id="loader">
+        <div class="spinner"></div>
+    </div>
+
     <div class="container">
         <h1>Crop Recommender</h1>
         <h3>Using Random Forest: The Best Model</h3>
@@ -111,9 +144,7 @@
                     <label for="pt">TEMPERATURE</label>
                     <input type="number" id="pt" name="pt" step="0.01" min="0" max="50" required tabindex="4">
                 </div>
-                <div class="form-group">
-                    <!-- Empty cell for spacing -->
-                </div>
+                <div class="form-group"><!-- empty spacing --></div>
             </div>
             <button type="submit" class="btn" tabindex="8">Classify</button>
         </form>
@@ -124,5 +155,11 @@
         </div>
         {% endif %}
     </div>
+
+    <script>
+        window.addEventListener("load", () => {
+            document.getElementById("loader").style.display = "none";
+        });
+    </script>
 </body>
 </html>
